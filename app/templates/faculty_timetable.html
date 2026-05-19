@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-calendar-week"></i> My Weekly Timetable
+            </h1>
+            <p class="text-muted">{{ faculty_name }} • Week {{ week_start.strftime('%d %b %Y') }} to {{ week_end.strftime('%d %b %Y') }} • Academic Year {{ academic_year }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary me-2 mb-2">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <form method="get" class="d-inline">
+                <input type="hidden" name="week_start" value="{{ week_start.strftime('%Y-%m-%d') }}">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        name="academic_year" 
+                        value="{{ academic_year }}"
+                        placeholder="2025-26"
+                    >
+                    <button class="btn btn-primary" type="submit">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Timetable Grid -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a class="btn btn-outline-secondary" href="{{ previous_week_url }}">Previous Week</a>
+        <strong>{{ week_start.strftime('%d %b') }} - {{ week_end.strftime('%d %b %Y') }}</strong>
+        <a class="btn btn-outline-secondary" href="{{ next_week_url }}">Next Week</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-center fw-bold" style="width: 10%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                Hour
+                            </th>
+                            {% for day in days %}
+                            <th class="text-center fw-bold" style="width: 18%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                {{ day }}
+                                <div class="small fw-normal">{{ week_dates[day].strftime('%d %b') }}</div>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hour in hours %}
+                        <tr>
+                            <td class="text-center fw-bold align-middle bg-light">
+                                <span class="badge bg-primary">Hour {{ hour }}</span>
+                            </td>
+                            {% for day in days %}
+                            <td class="align-middle" style="min-height: 80px;">
+                                {% if timetable_grid[day][hour] %}
+                                    {% set entry = timetable_grid[day][hour] %}
+                                    {% if entry.type == 'class' %}
+                                    <div class="p-2" style="background: {% if entry.is_lab %}#e3f2fd{% else %}#f3e5f5{% endif %}; border-radius: 8px; border-left: 4px solid {% if entry.is_lab %}#1976d2{% else %}#7b1fa2{% endif %};">
+                                        <p class="mb-1">
+                                            <strong class="text-dark">{{ entry.subject }}</strong>
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-folder"></i> {{ entry.class }}
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-code-square"></i> {{ entry.course_code }}
+                                        </p>
+                                        {% if entry.is_lab %}
+                                        <span class="badge bg-info text-dark mt-1">Lab</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary mt-1">Theory</span>
+                                        {% endif %}
+                                    </div>
+                                    {% elif entry.type == 'duty' %}
+                                    <div class="p-2" style="background: #fff3cd; border-radius: 8px; border-left: 4px solid #ff9800;">
+                                        <p class="mb-1">
+                                            <strong class="text-dark">{{ entry.duty_name }}</strong>
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-tag"></i> {{ entry.category }}
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-clock"></i> {{ entry.allocated_hours }} of {{ entry.hours }} hrs this week
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-calendar-event"></i> {{ entry.duty_day }}, {{ entry.duty_date }}
+                                        </p>
+                                        <p class="mb-0 small text-muted">
+                                            <i class="bi bi-calendar-range"></i> {{ entry.start_date }} - {{ entry.end_date }}
+                                        </p>
+                                        <span class="badge bg-warning text-dark mt-1">Duty</span>
+                                    </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <span class="text-sm">—</span>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-info-circle"></i> Legend
+                    </h5>
+                    <div class="mt-3">
+                        <p class="mb-2">
+                            <span class="badge bg-info text-dark">Lab</span> 
+                            <span class="ms-2">Laboratory/Practical Session (3 hours continuous)</span>
+                        </p>
+                        <p class="mb-2">
+                            <span class="badge bg-secondary">Theory</span> 
+                            <span class="ms-2">Theoretical/Lecture Session</span>
+                        </p>
+                        <p class="mb-0">
+                            <span class="badge bg-warning text-dark">Duty</span> 
+                            <span class="ms-2">Administrative/Academic Duty Assignment</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-speedometer2"></i> Workload Summary
+                    </h5>
+                    <div class="mt-3">
+                        <p class="mb-2">
+                            <strong>Teaching Hours:</strong> 
+                            <span class="badge bg-primary">{{ teaching_hours }}</span>
+                        </p>
+                        <p class="mb-2">
+                            <strong>Duty Hours:</strong> 
+                            <span class="badge bg-warning text-dark">{{ total_duty_hours }}</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Total Workload:</strong> 
+                            <span class="badge bg-success">{{ teaching_hours + total_duty_hours }} / {{ faculty_max_workload }} hrs</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table td {
+        border-color: #e9ecef;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    @media (max-width: 768px) {
+        .table {
+            font-size: 0.85rem;
+        }
+        
+        .table th, .table td {
+            padding: 0.5rem !important;
+        }
+    }
+</style>
+{% endblock %}
